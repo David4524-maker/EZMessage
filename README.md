@@ -1,47 +1,52 @@
 # EZMessage
 
-**EZMessage es una app de mensajes gratis y de código abierto.**
+**EZMessage es una app de mensajería de código abierto, 100% privada y local, construida sobre Python.**
 
 ---
 
-## Privacidad y Almacenamiento
-Todos tus datos se gestionan de forma **100% local** a través del archivo `ezmessage_chats.json`. Los mensajes no se envían a servidores externos ni a ningún servicio de terceros.
+## 🔒 ¿Cómo funcionan los datos y los chats?
+Todo se gestiona de forma **estrictamente local** en tu equipo. La aplicación no envía tus conversaciones ni credenciales a servidores externos.
+
+Al ejecutar el programa, se crean de forma automática los siguientes archivos en la misma carpeta:
+* `david_accounts.json`: Almacena los perfiles de usuario locales.
+* `ezmessage_chats.json`: Guarda el historial completo de tus mensajes.
+* `ezmessage_config.json`: Registra tus preferencias de Inteligencia Artificial.
 
 ---
 
-## Inicio de Sesión (Google y Apple)
-El inicio de sesión con Google y Apple está disponible, pero funciona de manera **local y simulada**. No se conecta a APIs externas ni comparte tus credenciales reales; sirve únicamente como identificador visual en tu equipo.
+## 🔑 ¿Se puede iniciar sesión con Google y Apple?
+**Sí, pero el flujo es simulado a nivel local**. Funciona como un inicio de sesión *OAuth offline*: el programa solicita tu correo electrónico únicamente para generar o vincular una Cuenta David interna. No se conecta a las APIs oficiales de Google o Apple ni requiere contraseñas en red.
 
 ---
 
-##  Gestión de Contactos y Asistente AI
-Para empezar a chatear, selecciona **"Nueva Conversación"** e ingresa el identificador de tu contacto. 
+## 👥 ¿Qué hago si no tengo contactos en mi equipo?
+Puedes iniciar un chat seleccionando **"Nueva conversación"** e ingresando el nombre de usuario de otra cuenta creada en tu misma máquina. 
 
-Si no tienes contactos agregados, puedes interactuar con Inteligencias Artificiales o usar el asistente integrado presionando el botón **"Asistente AI"** para abrir **EZPack AI**.
+Si quieres probar la app a solas, la mejor solución es chatear con Inteligencias Artificiales pulsando el botón **"🤖 Asistente AI"**.
 
-###  Configuración de EZPack AI:
-* **Opción Manual:** Descarga el archivo HTML de EZPack AI desde este repositorio y colócalo directamente en la carpeta raíz de `EZMessage`.
-* **Opción Rápida:** Presiona el botón de los 3 puntos, ve a **"Configurar IA..."**, selecciona la IA de tu preferencia, vuelve a presionar los 3 puntos y haz clic en **"Abrir [IA] en el navegador"**.
-
----
-
-##  Requisitos del Sistema
-* [Python 3.14+](https://www.python.org)
-* **Tkinter** (incluido por defecto en la instalación estándar de Python).
+### 🛠️ Configuración del Asistente AI (EZPack AI)
+El asistente se ejecuta en tu navegador web. Tienes dos formas de configurarlo:
+* **Opción Local:** Descarga el archivo `ezpack.html` de este repositorio y colócalo en la misma carpeta de `EZMessage`. Al presionar **"Asistente AI"**, se abrirá la interfaz local.
+* **Opción Externa:** Haz clic en el botón de configuración (los tres puntos `⋯`), elige **"Configurar IA…"** y selecciona el proveedor de tu preferencia (ChatGPT, Gemini, Claude, DeepSeek, Grok). Luego, desde el menú, puedes seleccionar **"Abrir [Proveedor] en el navegador"**.
 
 ---
 
-##  Alternativas de Mensajería
-Si deseas comparar este proyecto con otras plataformas de mensajería populares:
-* [WhatsApp](https://www.whatsapp.com)
-* [Telegram](https://web.telegram.org)
-* [Messenger](https://www.messenger.com)
-* [Facebook](https://www.facebook.com)
-* [Google Messages](https://messages.google.com/web)
+## 📋 Requisitos del Sistema
+* [Python 3.14+](https://python.org) [1]
+* **Tkinter** (Librería nativa de interfaz gráfica, incluida por defecto en la instalación estándar de Python).
+
+---
+
+## 🔄 Alternativas de Mensajería
+Si deseas evaluar o comparar el uso de este proyecto frente a servicios comerciales en la nube:
+* [WhatsApp](https://whatsapp.com)
+* [Telegram](https://telegram.org)
+* [Messenger](https://messenger.com)
+* [Facebook](https://facebook.com)
+* [Google Messages](https://google.com)
 
 ---
 
 <p align="center">
-  <b>Hecho en Python 3.14. ¡Si te gustó el proyecto, apóyanos dejándole una estrella ⭐ al repositorio!</b>
+  <b>Hecho en Python 3.14. Si te gustó el proyecto, ¡apóyanos dejándole una estrella ⭐ al repositorio!</b>
 </p>
-
