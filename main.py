@@ -5,7 +5,7 @@
 ============================================================
   Cómo usar:
     1. Abre este archivo en IDLE (Python 3.14) y pulsa F5.
-    2. Inicia sesión con tu Cuenta David o crea una nueva.
+    2. Inicia sesión con tu Cuenta David, con Google o con Apple.
     3. Chatea con las demás Cuentas David del mismo equipo.
     4. Pulsa "🤖 Asistente AI" para abrir EZPack AI en el
        navegador con el proveedor (ChatGPT/Gemini/Claude/...)
@@ -15,9 +15,16 @@
     · ezpack.html         (el asistente de IA que corre en navegador)
 
   Archivos que se crean solos:
-    · david_accounts.json     -> cuentas David
+    · david_accounts.json     -> cuentas David (locales, Google y Apple)
     · ezmessage_chats.json    -> historial de mensajes
     · ezmessage_config.json   -> ajustes (proveedor IA elegido)
+
+  Notas sobre Google / Apple:
+    · Es un flujo OAuth *simulado* (app local sin backend).
+    · Se pide el correo del usuario y se crea o vincula una
+      Cuenta David automáticamente, marcada con provider
+      "google" o "apple".
+    · Esas cuentas no usan contraseña local.
 ============================================================
 """
 
@@ -79,6 +86,19 @@ AI_COL_H  = "#0d9488"
 BUBBLE_ME = "#2563eb"
 BUBBLE_OT = "#1e2d49"
 
+# Colores OAuth (Google / Apple)
+GOOGLE_BG   = "#ffffff"
+GOOGLE_BG_H = "#e5e7eb"
+GOOGLE_FG   = "#1f2937"
+APPLE_BG    = "#1f2937"
+APPLE_BG_H  = "#374151"
+APPLE_FG    = "#ffffff"
+
+OAUTH_PROVIDERS = {
+    "google": {"name": "Google", "icon": "G",  "icon_color": "#4285f4"},
+    "apple":  {"name": "Apple",  "icon": "🍎", "icon_color": "#ffffff"},
+}
+
 F_TITLE = ("Segoe UI", 20, "bold")
 F_H1    = ("Segoe UI", 15, "bold")
 F_H2    = ("Segoe UI", 11, "bold")
@@ -95,7 +115,7 @@ AVATAR_COLORS = ["#2563eb", "#8b5cf6", "#ec4899", "#f59e0b",
 #  Utilidades corregidas con protección de hilos
 # ------------------------------------------------------------
 def load_json(path, default):
-    with FILE_LOCK:  
+    with FILE_LOCK:
         try:
             if not os.path.exists(path):
                 return default
@@ -106,7 +126,7 @@ def load_json(path, default):
 
 
 def save_json(path, data):
-    with FILE_LOCK:  
+    with FILE_LOCK:
         try:
             tmp = path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
@@ -391,7 +411,6 @@ class EZMessage(tk.Tk):
             return
         provider = self.ai_provider()
         url = "file:///" + EZPACK_HTML.replace("\\", "/")
-        # Pasa el proveedor seleccionado al HTML (lo leerá vía URLSearchParams)
         from urllib.parse import quote
         url += "?ai=" + quote(provider)
         try:
@@ -478,6 +497,128 @@ class EZMessage(tk.Tk):
                                              highlightbackground=BORDER,
                                              highlightcolor=BORDER)
 
+    # --------------------------------------------------------
+    #  🔐 Inicio de sesión con Google / Apple (OAuth local)
+    # --------------------------------------------------------
+    def start_oauth_login(self, provider, parent, prefill_email=None):
+        """Abre el diálogo de 'Continuar con Google/Apple'."""
+        prov = OAUTH_PROVIDERS.get(provider)
+        if not prov:
+            return
+        name = prov["name"]
+
+        dlg = tk.Toplevel(parent)
+        dlg.title(f"Continuar con {name}")
+        dlg.configure(bg=PANEL)
+        dlg.geometry("420x400")
+        dlg.transient(parent.winfo_toplevel())
+        dlg.grab_set()
+        dlg.resizable(False, False)
+
+        dlg.update_idletasks()
+        top = parent.winfo_toplevel()
+        x = top.winfo_rootx() + (top.winfo_width() - 420) // 2
+        y = top.winfo_rooty() + (top.winfo_height() - 400) // 2
+        dlg.geometry(f"+{max(0, x)}+{max(0, y)}")
+
+        # Icono circular con la inicial / emoji del proveedor
+        ic = tk.Canvas(dlg, width=64, height=64, bg=PANEL,
+                       highlightthickness=0, bd=0)
+        ic.pack(pady=(24, 6))
+        circle_col = "#4285f4" if provider == "google" else "#000000"
+        ic.create_oval(0, 0, 63, 63, fill=circle_col, outline="")
+        ic.create_text(32, 32, text=prov["icon"],
+                       fill=prov["icon_color"],
+                       font=("Segoe UI", 24, "bold"))
+
+        tk.Label(dlg, text=f"Iniciar sesión con {name}",
+                 bg=PANEL, fg=TEXT, font=F_H1).pack()
+        tk.Label(dlg,
+                 text=f"Introduce el correo de tu cuenta {name}.\n"
+                      "Se creará o vinculará una Cuenta David automáticamente.",
+                 bg=PANEL, fg=MUTED, font=F_SMALL,
+                 justify="center").pack(pady=(4, 4))
+
+        tk.Label(dlg, text=f"Correo de {name}", bg=PANEL, fg=MUTED,
+                 font=F_SMALL, anchor="w").pack(fill="x", padx=22, pady=(14, 3))
+        e_email = make_entry(dlg)
+        e_email.pack(fill="x", padx=22, ipady=7)
+        if prefill_email:
+            e_email.insert(0, prefill_email)
+
+        def submit():
+            email = e_email.get().strip().lower()
+            if "@" not in email or "." not in email:
+                messagebox.showwarning(
+                    "EZMessage",
+                    "Introduce un correo electrónico válido.",
+                    parent=dlg)
+                return
+            self._oauth_do_login(provider, email, dlg)
+
+        e_email.bind("<Return>", lambda e: submit())
+
+        HoverButton(dlg, text=f"Continuar con {name}",
+                    normal_bg=ACCENT, hover_bg=ACCENT_H,
+                    command=submit, pady=9
+                    ).pack(fill="x", padx=22, pady=(18, 6))
+
+        HoverButton(dlg, text="Cancelar",
+                    normal_bg=PANEL, hover_bg=CARD, fg=TEXT,
+                    command=dlg.destroy, pady=8
+                    ).pack(fill="x", padx=22)
+
+    def _oauth_do_login(self, provider, email, dlg):
+        """Crea o recupera la Cuenta David vinculada al correo OAuth."""
+        self.reload_accounts()
+
+        # 1) ¿Ya existe una cuenta vinculada a ese email+proveedor?
+        found_key = None
+        for k, acc in self.accounts.items():
+            if (acc.get("email", "").lower() == email
+                    and acc.get("provider") == provider):
+                found_key = k
+                break
+
+        if found_key:
+            acc = self.accounts[found_key]
+            dlg.destroy()
+            self.login(acc["username"])
+            messagebox.showinfo(
+                "EZMessage",
+                f"¡Bienvenido de nuevo, {acc['username']}!\n"
+                f"Has entrado con tu cuenta de {provider.title()}.")
+            return
+
+        # 2) Crear cuenta nueva vinculada al proveedor
+        username = email.split("@")[0].replace(".", "_").replace("+", "_")
+        if len(username) < 3:
+            username = f"user_{username}" if username else "user_oauth"
+        base = username
+        i = 1
+        while username.lower() in self.accounts:
+            username = f"{base}{i}"
+            i += 1
+
+        self.accounts[username.lower()] = {
+            "username": username,
+            "type": "normal",
+            "email": email,
+            "dob": "",
+            "age": 0,
+            "gender": "Otro",
+            "password": "",          # OAuth no usa contraseña local
+            "provider": provider,    # "google" | "apple"
+            "created": now_iso(),
+        }
+        self.save_accounts()
+        dlg.destroy()
+        self.login(username)
+        messagebox.showinfo(
+            "EZMessage",
+            f"¡Cuenta David creada y vinculada a {provider.title()}!\n"
+            f"Usuario: {username}")
+
     def _on_close(self):
         try:
             self.destroy()
@@ -546,6 +687,32 @@ class LoginFrame(tk.Frame):
                                   highlightbackground=BORDER,
                                   highlightcolor=BORDER)
 
+        # ---------- Separador "o continúa con" ----------
+        sep = tk.Frame(card, bg=PANEL)
+        sep.pack(fill="x", pady=(16, 10))
+        tk.Frame(sep, bg=BORDER, height=1).pack(side="left", fill="x",
+                                                expand=True, pady=9)
+        tk.Label(sep, text="  o continúa con  ", bg=PANEL, fg=MUTED,
+                 font=F_TINY).pack(side="left")
+        tk.Frame(sep, bg=BORDER, height=1).pack(side="left", fill="x",
+                                                expand=True, pady=9)
+
+        # ---------- Botones OAuth ----------
+        oauth = tk.Frame(card, bg=PANEL)
+        oauth.pack(fill="x")
+
+        HoverButton(oauth, text="G   Google",
+                    normal_bg=GOOGLE_BG, hover_bg=GOOGLE_BG_H, fg=GOOGLE_FG,
+                    command=lambda: self.app.start_oauth_login("google", self),
+                    pady=9
+                    ).pack(side="left", fill="x", expand=True, padx=(0, 4))
+
+        HoverButton(oauth, text="🍎   Apple",
+                    normal_bg=APPLE_BG, hover_bg=APPLE_BG_H, fg=APPLE_FG,
+                    command=lambda: self.app.start_oauth_login("apple", self),
+                    pady=9
+                    ).pack(side="left", fill="x", expand=True, padx=(4, 0))
+
         tk.Label(card, text="Los datos se guardan localmente en david_accounts.json",
                  bg=PANEL, fg="#5b7295", font=F_TINY,
                  wraplength=330, justify="center").pack(pady=(16, 0))
@@ -568,6 +735,8 @@ class LoginFrame(tk.Frame):
 
         for key, acc in sorted(accounts.items()):
             is_kid = acc.get("type") == "kid"
+            provider = acc.get("provider")
+
             row = tk.Frame(self.acc_list, bg=CARD, cursor="hand2",
                            highlightthickness=1, highlightbackground=BORDER)
             row.pack(fill="x", pady=3)
@@ -579,19 +748,44 @@ class LoginFrame(tk.Frame):
             info.pack(side="left", fill="x", expand=True, pady=6)
             tk.Label(info, text=acc.get("username", key), bg=CARD, fg=TEXT,
                      font=F_BOLD, anchor="w").pack(fill="x")
-            sub = "Cuenta Infantil" if is_kid else acc.get("email", "Cuenta normal")
+
+            # ---- Subtítulo según el tipo de cuenta ----
+            if is_kid:
+                sub = "Cuenta Infantil"
+            elif provider == "google":
+                sub = acc.get("email", "Cuenta Google")
+            elif provider == "apple":
+                sub = acc.get("email", "Cuenta Apple")
+            else:
+                sub = acc.get("email", "Cuenta normal")
+
             tk.Label(info, text=sub, bg=CARD, fg=MUTED, font=F_TINY,
                      anchor="w").pack(fill="x")
 
-            tag_color = "#fce7f3" if is_kid else "#1e3a8a"
-            tag_fg = "#9d174d" if is_kid else "#93c5fd"
-            tk.Label(row, text="Niño/a" if is_kid else "Normal",
-                     bg=tag_color, fg=tag_fg, font=("Segoe UI", 8, "bold"),
+            # ---- Etiqueta del tipo de cuenta ----
+            if is_kid:
+                tag_text, tag_color, tag_fg = "Niño/a", "#fce7f3", "#9d174d"
+            elif provider == "google":
+                tag_text, tag_color, tag_fg = "Google", "#e5e7eb", "#1f2937"
+            elif provider == "apple":
+                tag_text, tag_color, tag_fg = "Apple", "#000000", "#ffffff"
+            else:
+                tag_text, tag_color, tag_fg = "Normal", "#1e3a8a", "#93c5fd"
+
+            tk.Label(row, text=tag_text, bg=tag_color, fg=tag_fg,
+                     font=("Segoe UI", 8, "bold"),
                      padx=7, pady=2).pack(side="right", padx=(0, 10))
 
+            # ---- Al pulsar: OAuth para cuentas Google/Apple ----
             def pick(_e, k=key):
+                a = self.app.accounts.get(k, {})
+                prov = a.get("provider")
+                if prov in ("google", "apple"):
+                    self.app.start_oauth_login(prov, self,
+                                               a.get("email", ""))
+                    return
                 self.user_entry.delete(0, "end")
-                self.user_entry.insert(0, self.app.accounts[k].get("username", k))
+                self.user_entry.insert(0, a.get("username", k))
                 self.pass_entry.focus_set()
 
             def hover_in(_e, r=row):
@@ -619,6 +813,12 @@ class LoginFrame(tk.Frame):
 
         self.app.reload_accounts()
         acc = self.app.accounts.get(user.lower())
+        if acc and acc.get("provider"):
+            messagebox.showinfo(
+                "EZMessage",
+                f"Esa cuenta está vinculada a {acc['provider'].title()}.\n"
+                "Usa el botón de Google o Apple para entrar.")
+            return
         if acc and acc.get("password") == sha256(pwd):
             self.app.login(acc["username"])
         else:
@@ -705,6 +905,26 @@ class RegisterFrame(tk.Frame):
         self.btn_back.configure(highlightthickness=1,
                                 highlightbackground=BORDER,
                                 highlightcolor=BORDER)
+
+        # ---- OAuth en registro ----
+        tk.Frame(card, bg=BORDER, height=1).pack(fill="x", pady=(14, 10))
+        tk.Label(card, text="O regístrate con", bg=PANEL, fg=MUTED,
+                 font=F_TINY).pack()
+
+        oauth = tk.Frame(card, bg=PANEL)
+        oauth.pack(fill="x", pady=(6, 0))
+
+        HoverButton(oauth, text="G   Google",
+                    normal_bg=GOOGLE_BG, hover_bg=GOOGLE_BG_H, fg=GOOGLE_FG,
+                    command=lambda: self.app.start_oauth_login("google", self),
+                    pady=8
+                    ).pack(side="left", fill="x", expand=True, padx=(0, 4))
+
+        HoverButton(oauth, text="🍎   Apple",
+                    normal_bg=APPLE_BG, hover_bg=APPLE_BG_H, fg=APPLE_FG,
+                    command=lambda: self.app.start_oauth_login("apple", self),
+                    pady=8
+                    ).pack(side="left", fill="x", expand=True, padx=(4, 0))
 
         self.e_dob.bind("<FocusOut>", self._autofill_age)
         self.e_dob.bind("<Return>", self._autofill_age)
@@ -971,8 +1191,17 @@ class ChatFrame(tk.Frame):
         make_avatar(self.me_avatar_slot, self.app.display_name(me), 42, PANEL).pack()
         self.me_name.configure(text=self.app.display_name(me))
         t = self.app.account_type(me)
-        self.me_sub.configure(
-            text="Cuenta Infantil" if t == "kid" else "Cuenta normal")
+        acc = self.app.accounts.get(me, {})
+        prov = acc.get("provider")
+        if prov == "google":
+            sub = "Cuenta Google"
+        elif prov == "apple":
+            sub = "Cuenta Apple"
+        elif t == "kid":
+            sub = "Cuenta Infantil"
+        else:
+            sub = "Cuenta normal"
+        self.me_sub.configure(text=sub)
 
     # --------------------------------------------------------
     def _open_menu(self):
@@ -1121,10 +1350,15 @@ class ChatFrame(tk.Frame):
         make_avatar(self.head_avatar_slot, name, 40, PANEL).pack()
         self.head_name.configure(text=name)
         t = self.app.account_type(self.active)
-        if t == "kid":
+        acc = self.app.accounts.get(self.active, {})
+        prov = acc.get("provider")
+        if prov == "google":
+            self.head_sub.configure(text=acc.get("email", "Cuenta Google"))
+        elif prov == "apple":
+            self.head_sub.configure(text=acc.get("email", "Cuenta Apple"))
+        elif t == "kid":
             self.head_sub.configure(text="Cuenta Infantil de David")
         elif t == "normal":
-            acc = self.app.accounts.get(self.active, {})
             self.head_sub.configure(text=acc.get("email", "Cuenta David"))
         else:
             self.head_sub.configure(text="Contacto externo")
@@ -1310,9 +1544,18 @@ class ChatFrame(tk.Frame):
                 info.pack(side="left", fill="x", expand=True, pady=6)
                 tk.Label(info, text=acc.get("username", key), bg=PANEL,
                          fg=TEXT, font=F_BOLD, anchor="w").pack(fill="x")
-                tk.Label(info,
-                         text="Cuenta Infantil" if acc.get("type") == "kid"
-                         else acc.get("email", "Cuenta normal"),
+
+                prov = acc.get("provider")
+                if prov == "google":
+                    sub = acc.get("email", "Cuenta Google")
+                elif prov == "apple":
+                    sub = acc.get("email", "Cuenta Apple")
+                elif acc.get("type") == "kid":
+                    sub = "Cuenta Infantil"
+                else:
+                    sub = acc.get("email", "Cuenta normal")
+
+                tk.Label(info, text=sub,
                          bg=PANEL, fg=MUTED, font=F_TINY,
                          anchor="w").pack(fill="x")
 
@@ -1339,17 +1582,17 @@ class ChatFrame(tk.Frame):
     def _schedule_poll(self):
         self.after(1500, self._poll)
 
-        def _poll(self):
-            if not self.winfo_exists():
-               return
+    def _poll(self):
+        if not self.winfo_exists():
+            return
         try:
             # load_json ahora es seguro gracias a FILE_LOCK
             new_chats = load_json(CHATS_FILE, {"messages": []})
             messages_list = new_chats.get("messages", [])
-            
+
             # Generamos la firma visual
             sig = json.dumps(messages_list, sort_keys=True, ensure_ascii=False)
-            
+
             if sig != self._sig:
                 self._sig = sig
                 self.app.chats = new_chats
