@@ -43,7 +43,7 @@ Si deseas evaluar o comparar el uso de este proyecto frente a servicios comercia
 * [Telegram](https://telegram.org)
 * [Messenger](https://messenger.com)
 * [Facebook](https://facebook.com)
-* [Google Messages](https://google.com)
+* [Google Messages](https://messages.google.com/web)
 
 ---
 
