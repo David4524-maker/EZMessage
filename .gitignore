@@ -1,0 +1,12 @@
+# Bases de datos locales de EZMessage (¡No subir a GitHub!)
+david_accounts.json
+ezmessage_chats.json
+ezmessage_config.json
+
+# Archivos temporales de guardado seguro
+*.json.tmp
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
