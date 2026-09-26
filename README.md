@@ -12,7 +12,7 @@ Todo está local con un archivo llamado `ezmessage_chats.json` eso significa que
 
 ## ¿Se puede iniciar sesión con Google y Apple?
 
-Si, se puede, pero es local
+Si, se puede, pero es local y simulado
 
 ---
 
