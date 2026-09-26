@@ -1,52 +1,47 @@
 # EZMessage
 
-**EZMessage es una app de mensajes gratis y de código abierto**
+**EZMessage es una app de mensajes gratis y de código abierto.**
 
 ---
 
-## ¿Como funcionan los datos de chats guardados?
-
-Todo está local con un archivo llamado `ezmessage_chats.json` eso significa que no pasan los chats a un servidor externo ni a ningun otro servicio
-
----
-
-## ¿Se puede iniciar sesión con Google y Apple?
-
-Si, se puede, pero es local y simulado
+## Privacidad y Almacenamiento
+Todos tus datos se gestionan de forma **100% local** a través del archivo `ezmessage_chats.json`. Los mensajes no se envían a servidores externos ni a ningún servicio de terceros.
 
 ---
 
-## ¿Que hago si no tengo contactos?
-
-Puedes agregar un contacto con "Nueva Conversación" y escribir el contacto, si no te sabes el contacto la unica solucion es chatear con otras IAs o presionando "Asistente AI" para abrir EZPack AI
-
-> Nota: en el explorador tienes que descargar EZPack AI, el HTML que está en mi repositorio y ponlo en la carpeta de EZMessage, si te da flojera puedes presionar los 3 puntos, dale en "Configurar IA...", elige la IA
-que quieras y presiona las 3 puntos y dale en "Abrir" (IA) "En el navegador"
+## Inicio de Sesión (Google y Apple)
+El inicio de sesión con Google y Apple está disponible, pero funciona de manera **local y simulada**. No se conecta a APIs externas ni comparte tus credenciales reales; sirve únicamente como identificador visual en tu equipo.
 
 ---
 
-## Requisitos
+##  Gestión de Contactos y Asistente AI
+Para empezar a chatear, selecciona **"Nueva Conversación"** e ingresa el identificador de tu contacto. 
 
-[Python](https://www.python.org)
+Si no tienes contactos agregados, puedes interactuar con Inteligencias Artificiales o usar el asistente integrado presionando el botón **"Asistente AI"** para abrir **EZPack AI**.
 
-Tkinker (Ya viene con Python)
-
----
-
-## Otras alternativas de chatear
-
-[Facebook](https://www.facebook.com)
-
-[Whatsapp](https://www.whatsapp.com)
-
-[Messenger](https://www.messenger.com)
-
-[Telegram](https://web.telegram.org)
-
-[Google Messages](https://messages.google.com/web)
+###  Configuración de EZPack AI:
+* **Opción Manual:** Descarga el archivo HTML de EZPack AI desde este repositorio y colócalo directamente en la carpeta raíz de `EZMessage`.
+* **Opción Rápida:** Presiona el botón de los 3 puntos, ve a **"Configurar IA..."**, selecciona la IA de tu preferencia, vuelve a presionar los 3 puntos y haz clic en **"Abrir [IA] en el navegador"**.
 
 ---
 
-<center><h1>Hecho en Python 3.14, si te gusto déjale una estrella en el repositorio :)</h1></center>
+##  Requisitos del Sistema
+* [Python 3.14+](https://www.python.org)
+* **Tkinter** (incluido por defecto en la instalación estándar de Python).
 
+---
+
+##  Alternativas de Mensajería
+Si deseas comparar este proyecto con otras plataformas de mensajería populares:
+* [WhatsApp](https://www.whatsapp.com)
+* [Telegram](https://web.telegram.org)
+* [Messenger](https://www.messenger.com)
+* [Facebook](https://www.facebook.com)
+* [Google Messages](https://messages.google.com/web)
+
+---
+
+<p align="center">
+  <b>Hecho en Python 3.14. ¡Si te gustó el proyecto, apóyanos dejándole una estrella ⭐ al repositorio!</b>
+</p>
 
