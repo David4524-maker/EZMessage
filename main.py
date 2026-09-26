@@ -29,6 +29,7 @@ import uuid
 import webbrowser
 import tkinter as tk
 from tkinter import messagebox, ttk
+import threading
 
 # ------------------------------------------------------------
 #  Rutas
@@ -38,6 +39,10 @@ ACCOUNTS_FILE = os.path.join(APP_DIR, "david_accounts.json")
 CHATS_FILE    = os.path.join(APP_DIR, "ezmessage_chats.json")
 CONFIG_FILE   = os.path.join(APP_DIR, "ezmessage_config.json")
 EZPACK_HTML   = os.path.join(APP_DIR, "ezpack.html")
+
+# Candado global para operaciones de lectura/escritura de archivos
+FILE_LOCK = threading.Lock()
+
 
 # ------------------------------------------------------------
 #  Proveedores de IA
@@ -87,26 +92,30 @@ AVATAR_COLORS = ["#2563eb", "#8b5cf6", "#ec4899", "#f59e0b",
                  "#10b981", "#06b6d4", "#ef4444", "#6366f1"]
 
 # ------------------------------------------------------------
-#  Utilidades
+#  Utilidades corregidas con protección de hilos
 # ------------------------------------------------------------
 def load_json(path, default):
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return default
+    with FILE_LOCK:  
+        try:
+            if not os.path.exists(path):
+                return default
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return default
 
 
 def save_json(path, data):
-    try:
-        tmp = path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        os.replace(tmp, path)
-        return True
-    except OSError as e:
-        messagebox.showerror("EZMessage", f"No se pudo guardar:\n{e}")
-        return False
+    with FILE_LOCK:  
+        try:
+            tmp = path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, path)
+            return True
+        except OSError as e:
+            messagebox.showerror("EZMessage", f"No se pudo guardar:\n{e}")
+            return False
 
 
 def sha256(txt):
@@ -1330,13 +1339,17 @@ class ChatFrame(tk.Frame):
     def _schedule_poll(self):
         self.after(1500, self._poll)
 
-    def _poll(self):
-        if not self.winfo_exists():
-            return
+        def _poll(self):
+            if not self.winfo_exists():
+               return
         try:
+            # load_json ahora es seguro gracias a FILE_LOCK
             new_chats = load_json(CHATS_FILE, {"messages": []})
-            sig = json.dumps(new_chats.get("messages", []), sort_keys=True,
-                             ensure_ascii=False)
+            messages_list = new_chats.get("messages", [])
+            
+            # Generamos la firma visual
+            sig = json.dumps(messages_list, sort_keys=True, ensure_ascii=False)
+            
             if sig != self._sig:
                 self._sig = sig
                 self.app.chats = new_chats
@@ -1346,6 +1359,7 @@ class ChatFrame(tk.Frame):
                     self._mark_read(self.active)
                     self._render_messages(scroll=True)
         except Exception:
+            # Si ocurre un retraso menor del sistema operativo, el bucle continúa sin romper la app
             pass
         self._schedule_poll()
 
